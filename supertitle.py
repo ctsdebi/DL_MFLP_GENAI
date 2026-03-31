@@ -21,9 +21,26 @@ def build_ansi(color, style):
     style = style.lower()
     if 'bold' in style:
         codes.append('1')
+    if 'italic' in style:
+        codes.append('3')
     if 'underline' in style:
         codes.append('4')
     return '\033[' + ';'.join(codes) + 'm'
+
+
+# ── Font map (matches numbering in config.ini) ────────────────────────────────
+FONTS = {
+    1:  'Consolas',
+    2:  'Courier New',
+    3:  'Lucida Console',
+    4:  'Lucida Sans Typewriter',
+    5:  'Terminal',
+    6:  'Cascadia Mono',
+    7:  'Cascadia Code',
+    8:  'DejaVu Sans Mono',
+    9:  'Ubuntu Mono',
+    10: 'Roboto Mono',
+}
 
 
 # ── Windows console helpers ───────────────────────────────────────────────────
@@ -51,15 +68,21 @@ class _CONSOLE_FONT_INFOEX(ctypes.Structure):
     ]
 
 
-def set_console_font(size, bold):
+def set_console_font(size, bold, face_name='Consolas'):
     font = _CONSOLE_FONT_INFOEX()
     font.cbSize       = ctypes.sizeof(_CONSOLE_FONT_INFOEX)
+    font.dwFontSize.X = 0                # let Windows auto-calculate width
     font.dwFontSize.Y = max(8, int(size))
-    font.FontFamily   = 54          # FF_MODERN | TMPF_TRUETYPE
+    font.FontFamily   = 48              # FF_MODERN (fixed-pitch TrueType)
     font.FontWeight   = 700 if bold else 400
-    font.FaceName     = 'Consolas'
+    font.FaceName     = face_name
     handle = ctypes.windll.kernel32.GetStdHandle(-11)
-    ctypes.windll.kernel32.SetCurrentConsoleFontEx(handle, False, ctypes.byref(font))
+    ok = ctypes.windll.kernel32.SetCurrentConsoleFontEx(handle, False, ctypes.byref(font))
+    if not ok:
+        err = ctypes.windll.kernel32.GetLastError()
+        print(f"[warning] SetCurrentConsoleFontEx failed (error {err}). "
+              "Font change only works in a real Windows console (cmd.exe), "
+              "not in VSCode or Windows Terminal.")
 
 
 # ── Config ────────────────────────────────────────────────────────────────────
@@ -68,10 +91,14 @@ def load_config(script_dir):
     cfg.read(os.path.join(script_dir, 'config.ini'), encoding='utf-8')
     d = cfg['display'] if 'display' in cfg else {}
     return {
-        'color':      d.get('font_color',  'white'),
-        'style':      d.get('font_style',  'bold'),
-        'size':       int(d.get('font_size',   '24')),
+        'color':       d.get('font_color',   'white'),
+        'style':       d.get('font_style',   'bold'),
+        'font_select': int(d.get('font_select', '1')),
+        'size':        int(d.get('font_size',   '24')),
         'start_line': int(d.get('start_line',  '1')),
+        'top_margin':   int(d.get('top_margin',    '0')),
+        'line_spacing': int(d.get('line_spacing',  '0')),
+        'left_margin':  int(d.get('left_margin',   '0')),
     }
 
 
@@ -80,29 +107,17 @@ def clear_screen():
     os.system('cls')
 
 
-def display_super_title(text, ansi_code):
+def display_super_title(text, ansi_code, top_blank_lines=0, line_gap=0, left_spaces=0):
     clear_screen()
-    try:
-        terminal_width = os.get_terminal_size().columns
-    except OSError:
-        terminal_width = 80
-
+    indent = ' ' * left_spaces
+    for _ in range(top_blank_lines):
+        print()
     lines = text.strip().splitlines()
-    max_len = max((len(line) for line in lines), default=0)
-    box_width = max(max_len + 4, 40)
-
-    border     = '=' * box_width
-    empty_line = '|' + ' ' * (box_width - 2) + '|'
-
-    print('\n' * 2)
-    print(ansi_code + border.center(terminal_width) + RESET)
-    print(ansi_code + empty_line.center(terminal_width) + RESET)
-    for line in lines:
-        padded = '|  ' + line.ljust(box_width - 4) + '  |'
-        print(ansi_code + padded.center(terminal_width) + RESET)
-    print(ansi_code + empty_line.center(terminal_width) + RESET)
-    print(ansi_code + border.center(terminal_width) + RESET)
-    print('\n')
+    for i, line in enumerate(lines):
+        print(ansi_code + indent + line + RESET)
+        if line_gap > 0 and i < len(lines) - 1:
+            for _ in range(line_gap):
+                print()
 
 
 # ── Input ─────────────────────────────────────────────────────────────────────
@@ -132,7 +147,8 @@ def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     cfg = load_config(script_dir)
 
-    set_console_font(cfg['size'], bold='bold' in cfg['style'].lower())
+    face_name = FONTS.get(cfg['font_select'], 'Consolas')
+    set_console_font(cfg['size'], bold='bold' in cfg['style'].lower(), face_name=face_name)
     ansi_code = build_ansi(cfg['color'], cfg['style'])
 
     input_file = os.path.join(script_dir, 'input.txt')
@@ -147,14 +163,20 @@ def main():
 
     total = len(paragraphs)
     index = max(0, min(cfg['start_line'] - 1, total - 1))
+    top_blank_lines = max(0, round(cfg['top_margin'] / cfg['size']))
+    line_gap        = max(0, round(cfg['line_spacing'] / cfg['size']))
+    left_spaces     = max(0, round(cfg['left_margin'] / (cfg['size'] / 2)))
 
     while True:
-        display_super_title(paragraphs[index], ansi_code)
+        display_super_title(paragraphs[index], ansi_code, top_blank_lines, line_gap, left_spaces)
 
         while True:
             key = get_key()
-            if key == 'right' and index + 1 < total:
+            if key in ('right', '>') and index + 1 < total:
                 index += 1
+                break
+            elif key in ('left', '<') and index > 0:
+                index -= 1
                 break
             elif key == 'esc':
                 clear_screen()
