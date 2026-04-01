@@ -1,0 +1,137 @@
+================================================================================
+FUNCTIONAL SPECIFICATION DOCUMENT
+Project: DL_MFLP_GENAI (Supertitle Presentation Tool)
+Version: 1.0 (Baseline)
+Date: 2026-04-01
+================================================================================
+
+1. PROJECT OVERVIEW
+-------------------
+DL_MFLP is a Windows-based console presentation tool that displays text content
+(paragraphs/slides) one at a time in a styled, interactive terminal interface.
+Content is loaded from a plain text file and displayed with configurable
+typography, color, and layout settings.
+
+
+2. FILES & COMPONENTS
+---------------------
+
+  supertitle.py     - Main Python application (core logic)
+  supertitle.bat    - Windows batch launcher (Python auto-detection)
+  config.ini        - User configuration file (display settings)
+  input.txt         - Content file (presentation text, paragraph-delimited)
+  README.md         - Project title header
+
+
+3. FUNCTIONAL REQUIREMENTS
+--------------------------
+
+3.1 CONTENT LOADING
+  - Load text from input.txt in the working directory
+  - Split content into slides by double-newline (paragraph) delimiter
+  - Each paragraph is treated as one slide/page
+
+3.2 DISPLAY
+  - Render one slide at a time in the Windows console
+  - Apply configurable top margin, left margin, and line spacing (in pixels,
+    converted to console character units)
+  - Clear and redraw screen on each navigation event
+  - Apply ANSI color and style to rendered text
+
+3.3 TYPOGRAPHY
+  - Select console font from a predefined list of 10 monospace fonts:
+      1. Consolas
+      2. Courier New
+      3. Lucida Console
+      4. Lucida Sans Typewriter
+      5. Terminal
+      6. Cascadia Mono
+      7. Cascadia Code
+      8. DejaVu Sans Mono
+      9. Ubuntu Mono
+     10. Roboto Mono
+  - Set font size in points via Windows Console API (ctypes)
+  - Set font weight (bold / normal)
+  - Apply ANSI text styling: bold, italic, underline
+
+3.4 COLOR
+  - Support 8 ANSI foreground colors: black, red, green, yellow, blue,
+    magenta, cyan, white
+  - Build ANSI escape sequences dynamically based on config
+  - Enable ANSI processing on Windows 10+ via SetConsoleMode API
+
+3.5 NAVIGATION
+  - Right arrow key or '>' : advance to next slide
+  - Left arrow key or '<'  : return to previous slide
+  - ESC key                : exit the application
+  - Keyboard input handled via msvcrt.getwch() (Windows-only)
+
+3.6 CONFIGURATION (config.ini)
+  Section: [display]
+  Key             Default   Description
+  --------------- --------- ----------------------------------------------
+  font_color      red       Foreground text color (ANSI color name)
+  font_style      Bold      Text style: Bold, Italic, Underline, or none
+  font_select     2         Font index (1-10, maps to FONTS dictionary)
+  font_size       24        Font size in points
+  start_line      1         Starting slide index (1-based)
+  top_margin      0         Top margin in pixels
+  line_spacing    0         Extra spacing between lines in pixels
+  left_margin     0         Left margin in pixels
+
+3.7 WINDOWS CONSOLE INTEGRATION
+  - Uses ctypes to call Windows API (kernel32):
+      SetConsoleMode       - Enable ANSI escape code processing
+      SetCurrentConsoleFontEx - Apply font name, size, weight
+  - Structures used: _COORD, _CONSOLE_FONT_INFOEX
+
+3.8 LAUNCHER (supertitle.bat)
+  - Auto-detects Python installation in this order:
+      1. py (Windows Python Launcher)
+      2. python (system PATH)
+      3. python3 (system PATH)
+      4. Common install paths: C:\Python*, Program Files, LocalAppData
+         for versions 3.8 through 3.13
+  - Displays error with prompt if Python is not found
+
+
+4. KEY FUNCTIONS (supertitle.py)
+---------------------------------
+
+  enable_ansi()           Enable ANSI escape processing on Windows console
+  build_ansi(color, style) Build ANSI escape sequence string
+  set_console_font(name, size, bold) Set console font via Windows API
+  clear_screen()          Clear the console (os.system 'cls')
+  display_super_title(text, config, ansi) Render slide with margins/color
+  get_key()               Read a single keypress; return normalized key name
+  load_paragraphs(path)   Parse input.txt into list of paragraph strings
+  main()                  Application entry point; orchestrates all logic
+
+
+5. DATA FLOW
+------------
+
+  [config.ini] ---> main() ---> reads display settings
+  [input.txt]  ---> load_paragraphs() ---> list of slides
+                                             |
+                                         main loop
+                                         /    |    \
+                               display()  get_key()  exit on ESC
+                                             |
+                               right -> next slide
+                               left  -> prev slide
+
+
+6. PLATFORM & DEPENDENCIES
+---------------------------
+
+  Platform:     Windows only (uses ctypes Windows API, msvcrt)
+  Python:       3.8 or higher
+  Dependencies: ctypes (stdlib), msvcrt (stdlib), configparser (stdlib),
+                os (stdlib), sys (stdlib)
+  No third-party packages required.
+
+
+================================================================================
+END OF BASELINE FUNCTIONAL SPECIFICATION
+================================================================================

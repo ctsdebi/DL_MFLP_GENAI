@@ -112,10 +112,25 @@ def display_super_title(text, ansi_code, top_blank_lines=0, line_gap=0, left_spa
     indent = ' ' * left_spaces
     for _ in range(top_blank_lines):
         print()
-    lines = text.strip().splitlines()
+    raw_lines = text.strip().splitlines()
+    # Expand '**' markers into a blank line between surrounding content
+    lines = []
+    for raw in raw_lines:
+        if '**' in raw:
+            parts = raw.split('**')
+            for j, part in enumerate(parts):
+                if part:
+                    lines.append(part)
+                if j < len(parts) - 1:
+                    lines.append('')          # blank line at each '**' position
+        else:
+            lines.append(raw)
     for i, line in enumerate(lines):
-        print(ansi_code + indent + line + RESET)
-        if line_gap > 0 and i < len(lines) - 1:
+        if line == '':
+            print()
+        else:
+            print(ansi_code + indent + line + RESET)
+        if line_gap > 0 and line != '' and i < len(lines) - 1:
             for _ in range(line_gap):
                 print()
 

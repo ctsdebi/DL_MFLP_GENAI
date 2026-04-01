@@ -1,0 +1,29 @@
+================================================================================
+CHANGELOG
+Project: DL_MFLP_GENAI (Supertitle Presentation Tool)
+================================================================================
+Format: [DATE] [FILE(S) CHANGED] - Description of change
+================================================================================
+
+2026-04-01 | BASELINE ESTABLISHED
+  - Created FUNCTIONAL_SPEC.txt (v1.0 baseline functional specification)
+  - Created CHANGELOG.txt (this file)
+  - Baseline codebase state:
+      supertitle.py   - Main application (console slideshow with ANSI/font control)
+      supertitle.bat  - Windows batch Python launcher
+      config.ini      - Display configuration (font_color=red, font_style=Bold,
+                        font_select=2, font_size=24, start_line=1,
+                        top_margin=0, line_spacing=0, left_margin=0)
+      input.txt       - Sample content (intro + 3 chapters)
+      README.md       - Project title
+
+================================================================================
+(New entries will be appended below this line)
+================================================================================
+
+2026-04-01 | supertitle.py - Added ** blank-line marker feature
+  - Modified display_super_title() to detect '**' within any line of a paragraph
+  - When '**' is found, the text is split at that marker and a blank line is
+    inserted at each '**' position before continuing display of the next segment
+  - Lines without '**' are unaffected; existing line_gap behaviour preserved
+
