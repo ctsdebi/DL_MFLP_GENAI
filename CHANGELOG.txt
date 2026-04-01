@@ -2,28 +2,106 @@
 CHANGELOG
 Project: DL_MFLP_GENAI (Supertitle Presentation Tool)
 ================================================================================
-Format: [DATE] [FILE(S) CHANGED] - Description of change
+Format per entry:
+  DATE       : YYYY-MM-DD
+  PROMPT     : The description/plan Claude generated before writing code
+  FILES      : Files changed
+  CHANGES    : What was actually done
 ================================================================================
 
-2026-04-01 | BASELINE ESTABLISHED
+────────────────────────────────────────────────────────────────────────────────
+DATE    : 2026-04-01
+PROMPT  : (Baseline — no prior prompt. Initial creation of documentation files
+           based on full codebase exploration.)
+FILES   : FUNCTIONAL_SPEC.txt (created), CHANGELOG.txt (created)
+CHANGES :
   - Created FUNCTIONAL_SPEC.txt (v1.0 baseline functional specification)
   - Created CHANGELOG.txt (this file)
   - Baseline codebase state:
-      supertitle.py   - Main application (console slideshow with ANSI/font control)
-      supertitle.bat  - Windows batch Python launcher
-      config.ini      - Display configuration (font_color=red, font_style=Bold,
-                        font_select=2, font_size=24, start_line=1,
-                        top_margin=0, line_spacing=0, left_margin=0)
-      input.txt       - Sample content (intro + 3 chapters)
-      README.md       - Project title
+      supertitle.py  - Main application (console slideshow with ANSI/font control)
+      supertitle.bat - Windows batch Python launcher
+      config.ini     - Display configuration (font_color=red, font_style=Bold,
+                       font_select=2, font_size=24, start_line=1,
+                       top_margin=0, line_spacing=0, left_margin=0)
+      input.txt      - Sample content (intro + 3 chapters)
+      README.md      - Project title
+────────────────────────────────────────────────────────────────────────────────
 
-================================================================================
-(New entries will be appended below this line)
-================================================================================
-
-2026-04-01 | supertitle.py - Added ** blank-line marker feature
+────────────────────────────────────────────────────────────────────────────────
+DATE    : 2026-04-01
+PROMPT  : "The change is in display_super_title(). When a line contains '**',
+           split on it and insert a blank line between the parts."
+FILES   : supertitle.py
+CHANGES :
   - Modified display_super_title() to detect '**' within any line of a paragraph
   - When '**' is found, the text is split at that marker and a blank line is
     inserted at each '**' position before continuing display of the next segment
   - Lines without '**' are unaffected; existing line_gap behaviour preserved
+────────────────────────────────────────────────────────────────────────────────
+
+────────────────────────────────────────────────────────────────────────────────
+DATE    : 2026-04-01
+PROMPT  : "Three changes needed: load_config, a new helper function, and main().
+           Add max_lines config option. After load_paragraphs(), add a step that
+           splits paragraphs exceeding max_lines into chunks using a new
+           paginate_paragraphs() function."
+FILES   : supertitle.py, config.ini
+CHANGES :
+  - Added max_lines key to config.ini [display] section (default 0 = no limit)
+  - Added max_lines to load_config() return dict
+  - Added paginate_paragraphs() function: splits any paragraph whose line count
+    exceeds max_lines into consecutive screen-sized chunks
+  - main() now applies paginate_paragraphs() after load_paragraphs()
+  - Navigation (left/right arrow) moves through chunks like normal slides
+────────────────────────────────────────────────────────────────────────────────
+
+────────────────────────────────────────────────────────────────────────────────
+DATE    : 2026-04-01
+PROMPT  : "The root cause is configparser.ConfigParser() uses BasicInterpolation
+           by default — it scans config values for %(key)s patterns. The Unicode
+           box-drawing characters in the decorative comment immediately after
+           max_lines = 2 (no blank line separator) could trip the parser into
+           misreading the section context. Fix: switch to RawConfigParser to
+           disable interpolation entirely, and add a blank line after max_lines
+           in config.ini."
+FILES   : supertitle.py, config.ini
+CHANGES :
+  - Changed configparser.ConfigParser() to configparser.RawConfigParser() in
+    load_config() to disable BasicInterpolation
+  - Added blank line after max_lines value in config.ini to cleanly separate
+    the value from the decorative comment block that follows it
+────────────────────────────────────────────────────────────────────────────────
+
+────────────────────────────────────────────────────────────────────────────────
+DATE    : 2026-04-01
+PROMPT  : "I'll rewrite the changelog with a new format that includes the Claude
+           prompt before each code change, backfilling all existing entries."
+FILES   : CHANGELOG.txt
+CHANGES :
+  - Restructured CHANGELOG.txt to add PROMPT field to every entry
+  - Backfilled PROMPT text for all prior entries
+  - New format: DATE / PROMPT / FILES / CHANGES per entry
+────────────────────────────────────────────────────────────────────────────────
+
+────────────────────────────────────────────────────────────────────────────────
+DATE    : 2026-04-01
+PROMPT  : "Add a LANGUAGE_CODES map, a translate_paragraphs() function using
+           deep-translator (free, no API key), add 'language' key to config.ini
+           and load_config(), then call translate_paragraphs() in main() after
+           loading paragraphs. If the library isn't installed, print a clear
+           pip install instruction and exit."
+FILES   : supertitle.py, config.ini
+CHANGES :
+  - Added LANGUAGE_CODES dict mapping 30+ language names to ISO-639 codes
+  - Added 'language' key to load_config() (default: 'English')
+  - Added translate_paragraphs() function:
+      * Skips translation if language is English/en/empty
+      * Imports GoogleTranslator from deep-translator (pip install deep-translator)
+      * Prints "Translating to <Language> ..." progress message
+      * Translates each paragraph; keeps original on per-paragraph failure
+      * Accepts bare ISO codes (e.g. 'fr') as fallback if name not in map
+  - main() now pipes paragraphs through translate_paragraphs() after pagination
+  - config.ini: added 'language = English' setting with full usage comments
+    and supported language list
+────────────────────────────────────────────────────────────────────────────────
 

@@ -78,6 +78,8 @@ typography, color, and layout settings.
   top_margin      0         Top margin in pixels
   line_spacing    0         Extra spacing between lines in pixels
   left_margin     0         Left margin in pixels
+  max_lines       0         Max lines per screen (0 = no limit)
+  language        English   Display language; non-English triggers translation
 
 3.7 WINDOWS CONSOLE INTEGRATION
   - Uses ctypes to call Windows API (kernel32):
@@ -129,7 +131,8 @@ typography, color, and layout settings.
   Python:       3.8 or higher
   Dependencies: ctypes (stdlib), msvcrt (stdlib), configparser (stdlib),
                 os (stdlib), sys (stdlib)
-  No third-party packages required.
+  Optional:     deep-translator (pip install deep-translator)
+                Required only when language != English
 
 
 ================================================================================

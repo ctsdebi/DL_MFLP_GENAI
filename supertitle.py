@@ -28,6 +28,20 @@ def build_ansi(color, style):
     return '\033[' + ';'.join(codes) + 'm'
 
 
+# ── Language → ISO-639 code map ──────────────────────────────────────────────
+LANGUAGE_CODES = {
+    'english': 'en', 'french': 'fr', 'spanish': 'es', 'german': 'de',
+    'italian': 'it', 'portuguese': 'pt', 'dutch': 'nl', 'russian': 'ru',
+    'chinese': 'zh-CN', 'japanese': 'ja', 'korean': 'ko', 'arabic': 'ar',
+    'hindi': 'hi', 'bengali': 'bn', 'turkish': 'tr', 'polish': 'pl',
+    'swedish': 'sv', 'norwegian': 'no', 'danish': 'da', 'finnish': 'fi',
+    'greek': 'el', 'czech': 'cs', 'romanian': 'ro', 'hungarian': 'hu',
+    'thai': 'th', 'vietnamese': 'vi', 'indonesian': 'id', 'malay': 'ms',
+    'hebrew': 'he', 'ukrainian': 'uk', 'urdu': 'ur', 'persian': 'fa',
+    'swahili': 'sw', 'tagalog': 'tl', 'malay': 'ms',
+}
+
+
 # ── Font map (matches numbering in config.ini) ────────────────────────────────
 FONTS = {
     1:  'Consolas',
@@ -87,7 +101,7 @@ def set_console_font(size, bold, face_name='Consolas'):
 
 # ── Config ────────────────────────────────────────────────────────────────────
 def load_config(script_dir):
-    cfg = configparser.ConfigParser()
+    cfg = configparser.RawConfigParser()
     cfg.read(os.path.join(script_dir, 'config.ini'), encoding='utf-8')
     d = cfg['display'] if 'display' in cfg else {}
     return {
@@ -99,6 +113,8 @@ def load_config(script_dir):
         'top_margin':   int(d.get('top_margin',    '0')),
         'line_spacing': int(d.get('line_spacing',  '0')),
         'left_margin':  int(d.get('left_margin',   '0')),
+        'max_lines':    int(d.get('max_lines',     '0')),
+        'language':         d.get('language',     'English'),
     }
 
 
@@ -148,11 +164,51 @@ def get_key():
 
 
 # ── Paragraphs ────────────────────────────────────────────────────────────────
+def paginate_paragraphs(paragraphs, max_lines):
+    """Split any paragraph whose line count exceeds max_lines into chunks."""
+    if max_lines <= 0:
+        return paragraphs
+    result = []
+    for para in paragraphs:
+        lines = para.splitlines()
+        for i in range(0, len(lines), max_lines):
+            result.append('\n'.join(lines[i:i + max_lines]))
+    return result
+
+
 def load_paragraphs(filepath):
     with open(filepath, 'r', encoding='utf-8') as f:
         content = f.read()
     raw_blocks = content.split('\n\n')
     return [b.strip() for b in raw_blocks if b.strip()]
+
+
+# ── Translation ───────────────────────────────────────────────────────────────
+def translate_paragraphs(paragraphs, language):
+    """Translate all paragraphs to the target language using deep-translator."""
+    lang = language.lower().strip()
+    if lang in ('english', 'en', ''):
+        return paragraphs
+
+    try:
+        from deep_translator import GoogleTranslator
+    except ImportError:
+        print("\n[error] Translation requires the 'deep-translator' package.")
+        print("        Run:  pip install deep-translator\n")
+        sys.exit(1)
+
+    target_code = LANGUAGE_CODES.get(lang, lang)   # fallback: treat value as an ISO code
+    translator  = GoogleTranslator(source='en', target=target_code)
+
+    print(f"Translating to {language.title()} ...", end='', flush=True)
+    translated = []
+    for para in paragraphs:
+        try:
+            translated.append(translator.translate(para) or para)
+        except Exception:
+            translated.append(para)   # keep original if a single paragraph fails
+    print(" done.")
+    return translated
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -171,7 +227,10 @@ def main():
         print(f"Error: '{input_file}' not found.")
         sys.exit(1)
 
-    paragraphs = load_paragraphs(input_file)
+    paragraphs = translate_paragraphs(
+        paginate_paragraphs(load_paragraphs(input_file), cfg['max_lines']),
+        cfg['language']
+    )
     if not paragraphs:
         print("input.txt is empty or has no paragraphs.")
         sys.exit(1)
