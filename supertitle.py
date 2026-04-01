@@ -38,7 +38,7 @@ LANGUAGE_CODES = {
     'greek': 'el', 'czech': 'cs', 'romanian': 'ro', 'hungarian': 'hu',
     'thai': 'th', 'vietnamese': 'vi', 'indonesian': 'id', 'malay': 'ms',
     'hebrew': 'he', 'ukrainian': 'uk', 'urdu': 'ur', 'persian': 'fa',
-    'swahili': 'sw', 'tagalog': 'tl', 'malay': 'ms',
+    'swahili': 'sw', 'tagalog': 'tl',
 }
 
 

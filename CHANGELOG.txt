@@ -85,6 +85,15 @@ CHANGES :
 
 ────────────────────────────────────────────────────────────────────────────────
 DATE    : 2026-04-01
+PROMPT  : "Duplicate key 'malay' in LANGUAGE_CODES dict causes invalid syntax
+           warning/error in strict parsers. Remove the second occurrence."
+FILES   : supertitle.py
+CHANGES :
+  - Removed duplicate 'malay': 'ms' entry from LANGUAGE_CODES (line 41)
+────────────────────────────────────────────────────────────────────────────────
+
+────────────────────────────────────────────────────────────────────────────────
+DATE    : 2026-04-01
 PROMPT  : "Add a LANGUAGE_CODES map, a translate_paragraphs() function using
            deep-translator (free, no API key), add 'language' key to config.ini
            and load_config(), then call translate_paragraphs() in main() after
